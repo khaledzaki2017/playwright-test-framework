@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "auth:generate": "ts-node tests/auth/setup/generate-auth-storage.ts",
+    "test:admin": "npx playwright test --grep @admin",
+    "test:viewer": "npx playwright test --grep @viewer",
+    "test:all": "npx playwright test",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report"
+
   },
   "keywords": [],
   "author": "",
