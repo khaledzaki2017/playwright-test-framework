@@ -11,7 +11,10 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // baseURL: 'https://your-app.com',
   },
+  globalSetup: require.resolve('./tests/auth/setup/global-setup.ts')
+  ,
   projects: [
     {
       name: 'chromium',
