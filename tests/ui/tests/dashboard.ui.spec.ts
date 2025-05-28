@@ -1,7 +1,8 @@
-// tests/ui/tests/dashboard.ui.spec.ts
-import { test, expect } from '../fixtures/ui-fixture';
+import { test, expect } from '../fixtures/role-fixture';
 
-test('Admin can view dashboard directly', async ({ page }) => {
+test.use({ role: 'admin' });
+
+test('Admin can access dashboard controls', async ({ page }) => {
   await page.goto('/dashboard');
-  await expect(page.getByText('Welcome back')).toBeVisible();
+  await expect(page.getByText('Admin Controls')).toBeVisible();
 });
