@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/login-fixture';
+import { test, expect } from '../../fixtures/login-fixture';
 
 
 test.describe('Login Flow', () => {

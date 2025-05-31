@@ -4,13 +4,18 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "auth:generate": "ts-node tests/auth/setup/generate-auth-storage.ts",
-    "test:admin": "npx playwright test --grep @admin",
-    "test:viewer": "npx playwright test --grep @viewer",
-    "test:all": "npx playwright test",
-    "test:debug": "npx playwright test --debug",
-    "test:report": "npx playwright show-report"
-
+   
+    "auth:admin": "ENV=dev ROLE=admin ts-node tests/auth/setup/generate-auth.ts",
+    "auth:tech": "ENV=dev ROLE=technician ts-node tests/auth/setup/generate-auth.ts",
+    "auth:viewer": "ENV=dev ROLE=viewer ts-node tests/auth/setup/generate-auth.ts",
+  
+    "auth:admin:stage": "ENV=stage ROLE=admin ts-node tests/auth/setup/generate-auth.ts",
+    "auth:tech:stage": "ENV=stage ROLE=technician ts-node tests/auth/setup/generate-auth.ts",
+    "auth:viewer:stage": "ENV=stage ROLE=viewer ts-node tests/auth/setup/generate-auth.ts",
+  
+    "auth:admin:prod": "ENV=prod ROLE=admin ts-node tests/auth/setup/generate-auth.ts",
+    "auth:tech:prod": "ENV=prod ROLE=technician ts-node tests/auth/setup/generate-auth.ts",
+    "auth:viewer:prod": "ENV=prod ROLE=viewer ts-node tests/auth/setup/generate-auth.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,5 +26,8 @@
     "@types/node": "^22.15.23",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0"
   }
 }

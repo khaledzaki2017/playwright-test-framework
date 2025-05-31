@@ -1,32 +1,39 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
+
+const ENV = process.env.ENV || 'dev';
+dotenv.config({ path: path.resolve(__dirname, `env/.env.${ENV}`) });
 
 export default defineConfig({
+  globalSetup: './tests/auth/setup/global-setup.ts',
   testDir: './tests',
   timeout: 30 * 1000,
-  retries: 1,
-  reporter: [['html', { open: 'never' }], ['list']],
+  retries: 0,
+  workers: 4,
   use: {
-    headless: true,
-    viewport: { width: 1280, height: 720 },
-    ignoreHTTPSErrors: true,
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    // baseURL: 'https://your-app.com',
+    baseURL: process.env.BASE_URL,
+    trace: 'on-first-retry',
   },
-  globalSetup: require.resolve('./tests/auth/setup/global-setup.ts')
-  ,
+
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        browserName: 'chromium',
+      },
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        browserName: 'firefox',
+      },
     },
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        browserName: 'webkit',
+      },
     },
   ],
 });

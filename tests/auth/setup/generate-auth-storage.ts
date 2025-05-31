@@ -1,28 +1,53 @@
-import { chromium } from '@playwright/test';
+import { request } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 
-const roles = [
-  { username: 'admin', password: 'adminpass', file: 'admin.json' },
-  { username: 'viewer', password: 'viewerpass', file: 'viewer.json' },
-  { username: 'tech_user', password: 'techpass', file: 'technician.json' },
-];
+const ENV = process.env.ENV || 'dev';
+const ROLE = process.env.ROLE; // Accept role from CLI
+dotenv.config({ path: path.resolve(`./env/.env.${ENV}`) });
+
+if (!ROLE) {
+  throw new Error('Please provide a ROLE environment variable (e.g., ROLE=viewer)');
+}
+
+const users: Record<string, { username: string; password: string }> = {
+  admin: {
+    username: process.env.ADMIN_USER!,
+    password: process.env.ADMIN_PASS!,
+  },
+  technician: {
+    username: process.env.TECH_USER!,
+    password: process.env.TECH_PASS!,
+  },
+  viewer: {
+    username: process.env.VIEWER_USER!,
+    password: process.env.VIEWER_PASS!,
+  },
+};
 
 (async () => {
-  const browser = await chromium.launch();
+  const user = users[ROLE];
 
-  for (const { username, password, file } of roles) {
-    const page = await browser.newPage();
-    await page.goto('https://your-app.com/login');
-    await page.fill('#username', username);
-    await page.fill('#password', password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard');
-
-    const path = `tests/auth/storage/${file}`;
-    await page.context().storageState({ path });
-    console.log(`Saved auth state for ${username} to ${file}`);
-
-    await page.close();
+  if (!user) {
+    throw new Error(`Unsupported ROLE: ${ROLE}`);
   }
 
-  await browser.close();
+  const context = await request.newContext();
+  const response = await context.post(`${process.env.API_URL}/login`, {
+    data: {
+      username: user.username,
+      password: user.password,
+    },
+  });
+
+  if (!response.ok()) {
+    throw new Error(`Login failed for role: ${ROLE}`);
+  }
+
+  const storagePath = path.resolve(`tests/auth/storage/${ENV}/${ROLE}.json`);
+  fs.mkdirSync(path.dirname(storagePath), { recursive: true });
+  await context.storageState({ path: storagePath });
+
+  console.log(`✅ Storage for ${ROLE} saved to: ${storagePath}`);
 })();

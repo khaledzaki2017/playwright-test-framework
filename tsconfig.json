@@ -111,6 +111,6 @@
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
 
-  "include": ["tests", "config", "helpers", "utils"]
-
+  "include": ["tests", "config", "helpers", "utils", "fixtures", "tests/auth/setup", "pages"],
+  "exclude": ["node_modules", "dist", "coverage", "playwright-report", "tests/auth/setup/fixtures", "tests/auth/setup/utils", "tests/auth/setup/helpers"]
 }
