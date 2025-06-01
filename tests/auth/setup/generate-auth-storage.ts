@@ -49,5 +49,5 @@ const users: Record<string, { username: string; password: string }> = {
   fs.mkdirSync(path.dirname(storagePath), { recursive: true });
   await context.storageState({ path: storagePath });
 
-  console.log(`✅ Storage for ${ROLE} saved to: ${storagePath}`);
+  console.log(`Storage for ${ROLE} saved to: ${storagePath}`);
 })();

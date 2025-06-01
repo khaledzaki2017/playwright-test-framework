@@ -1,11 +1,17 @@
 import { defineConfig } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
+import allure from 'allure-playwright';
+
 
 const ENV = process.env.ENV || 'dev';
 dotenv.config({ path: path.resolve(__dirname, `env/.env.${ENV}`) });
 
 export default defineConfig({
+  reporter: [ ['list'],['allure-playwright'],['./utils/jira-reporter.ts']],
+  outputDir: `./tests/results/${ENV}`,
+  
+
   globalSetup: './tests/auth/setup/global-setup.ts',
   testDir: './tests',
   timeout: 30 * 1000,

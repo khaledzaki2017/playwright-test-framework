@@ -1,0 +1,143 @@
+name: Multi-Stage CI/CD Pipeline with Playwright and Jira
+
+on:
+  push:
+    branches:
+      - dev
+      - stage
+      - main
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_hash: ${{ steps.get_hash.outputs.hash }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Get Commit Hash
+        id: get_hash
+        run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  test-dev:
+    name: Run Tests on Dev
+    needs: setup
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    env:
+      ENV: dev
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Auth Tokens for Roles
+        run: |
+          ROLE=admin ENV=dev ts-node tests/auth/setup/generate-auth.ts
+          ROLE=viewer ENV=dev ts-node tests/auth/setup/generate-auth.ts
+
+      - name: Run Playwright Tests (dev)
+        run: npx playwright test --project=chromium --reporter=allure-playwright
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report-dev
+          path: ./allure-results
+
+  deploy-to-stage:
+    name: Deploy to Staging
+    needs: test-dev
+    if: github.ref == 'refs/heads/stage'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Script to Staging
+        run: ./scripts/deploy-to-stage.sh
+
+  test-stage:
+    name: Run Tests on Stage
+    needs: deploy-to-stage
+    runs-on: ubuntu-latest
+    env:
+      ENV: stage
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Auth Tokens for Roles
+        run: |
+          ROLE=admin ENV=stage ts-node tests/auth/setup/generate-auth.ts
+          ROLE=viewer ENV=stage ts-node tests/auth/setup/generate-auth.ts
+
+      - name: Run Playwright Tests (stage)
+        run: npx playwright test --project=chromium --reporter=allure-playwright
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report-stage
+          path: ./allure-results
+
+      - name: Create Jira Ticket if Failed
+        if: failure()
+        uses: atlassian/gajira-create@v3
+        with:
+          project: QA
+          summary: "Stage Tests Failed for commit ${{ needs.setup.outputs.commit_hash }}"
+          description: "Some tests failed on staging. Please review the attached Allure report."
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+  deploy-to-prod:
+    name: Deploy to Production
+    needs: test-stage
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Script to Production
+        run: ./scripts/deploy-to-prod.sh
+
+  test-prod:
+    name: Run Tests on Prod
+    needs: deploy-to-prod
+    runs-on: ubuntu-latest
+    env:
+      ENV: prod
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Auth Tokens for Roles
+        run: |
+          ROLE=admin ENV=prod ts-node tests/auth/setup/generate-auth.ts
+          ROLE=viewer ENV=prod ts-node tests/auth/setup/generate-auth.ts
+
+      - name: Run Playwright Tests (prod)
+        run: npx playwright test --project=chromium --reporter=allure-playwright
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report-prod
+          path: ./allure-results
+
+      - name: Create Jira Ticket if Failed
+        if: failure()
+        uses: atlassian/gajira-create@v3
+        with:
+          project: QA
+          summary: "Prod Tests Failed for commit ${{ needs.setup.outputs.commit_hash }}"
+          description: "Some tests failed on production. Please review the attached Allure report."
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
